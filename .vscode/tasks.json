@@ -1,0 +1,71 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "make",
+            "detail": "Run make",
+            "type": "shell",
+            "command": "${input:makeTarget} ",
+            "options": {
+                "env": {}
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "make: all",
+            "detail": "Run make",
+            "type": "shell",
+            "command": "make all ",
+            "options": {
+                "env": {}
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "make: flash",
+            "detail": "Run make",
+            "type": "shell",
+            "command": "make flash ",
+            "options": {
+                "env": {}
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "type": "pickString",
+            "id": "makeTarget",
+            "description": "Select a build target",
+            "options": [
+                "make all",
+                "make flash",
+                "make disassemble",
+                "make squeaky_clean",
+                "make size",
+                "make debug",
+            ],
+            "default": "make all"
+        }
+    ]
+}

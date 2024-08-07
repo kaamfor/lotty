@@ -1,0 +1,23 @@
+{
+    // https://www.tonymitchell.ca/posts/use-vscode-with-avr-toolchain/
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/lib/avr/include",
+                "${workspaceFolder}/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "{os}-gcc-{arch}",
+            "compilerArgs": [
+                "-mmcu=atmega328p", // Will ensure MCU defines are set correctly
+                "-DF_CPU=16000000UL", // Will ensure F_CPU is set correctly
+                "-Os" // Will avoid optimization warnings re: _delay
+            ]
+        }
+    ],
+    "version": 4
+}
