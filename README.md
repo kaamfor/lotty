@@ -19,3 +19,5 @@ On Debian (& some derivatives), the AVR toolkit is contained in these packages:
 ## Links
 
 * https://daniellethurow.com/blog/2021/6/8/programming-an-atmega328p-without-the-arduino-ide
+
+* https://www.tonymitchell.ca/posts/building-avr-projects-with-make/
