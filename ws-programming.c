@@ -1,69 +1,58 @@
-#ifndef __AVR_ATmega328P__
-#define __AVR_ATmega328P__
+#ifndef _LOTTY_COMMON_H_
+#include "common.h"
 #endif
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
+#ifndef _LOTTY_WS_PROGRAMMING_H_
 
 #define MAX(x, y) ((x) > (y)) ? (x) : (y)
 #define MIN(x, y) ((x) < (y)) ? (x) : (y)
 
-// stable: T1H: 12, T0H: 3, T1_TOP: 23, T0_TOP: 17
-
-// orig: 14, last: 10
-#define T1H_COUNT 13
-// orig: 6, last: 5
-#define T0H_COUNT 4
-// orig: 23
-#define T1_TOP 25
-// orig: 16, last: 18
-#define T0_TOP 16
-
-#define LED_HBIT()         \
-    do                     \
-    {                      \
-        OCR0A = T1_TOP;    \
-        OCR0B = T1H_COUNT; \
-    } while (0)
-#define LED_LBIT()         \
-    do                     \
-    {                      \
-        OCR0A = T0_TOP;    \
-        OCR0B = T0H_COUNT; \
-    } while (0)
+#define LED_1HCOUNT 13
+#define LED_0HCOUNT 4
+#define LED_1TOP 25
+#define LED_0TOP 16
 
 #define TIM0_START() TCCR0B |= (1 << CS00)
 #define TIM0_STOP() TCCR0B &= ~(1 << CS00)
 
-#define LED_SENDBYTE(ledbyte)      \
-    do                             \
-    {                              \
-        brightness = ledbyte;      \
-        i = 0;                     \
-        LED_SETBIT(ledbyte & 128); \
-        TCNT0 = 0;                 \
-        TIM0_START();              \
-                                   \
+#define LED_SENDBYTE(ledbyte)         \
+    do                                \
+    {                                 \
+        brightness = ledbyte;         \
+        i = 0;                        \
+        if (brightness & 128)         \
+        {                             \
+            t0_hcount = LED_1HCOUNT;  \
+            t0_top = LED_1TOP;        \
+        }                             \
+        else                          \
+        {                             \
+            t0_hcount = LED_0HCOUNT;  \
+            t0_top = LED_0TOP;        \
+        }                             \
+        LED_SETBIT();                 \
+                                      \
+        TCNT0 = 0;                    \
+        TIM0_START();                 \
+                                      \
+        i++;                          \
+        brightness <<= 1;             \
+        t0_hcount = brightness & 128; \
+                                      \
     } while (0)
 
-#define LED_SETBIT(logic) \
-    do                    \
-    {                     \
-        if (logic)        \
-        {                 \
-            LED_HBIT();   \
-        }                 \
-        else              \
-        {                 \
-            LED_LBIT();   \
-        }                 \
-        i++;              \
+#define LED_SETBIT()       \
+    do                     \
+    {                      \
+        OCR0A = t0_top;    \
+        OCR0B = t0_hcount; \
     } while (0)
 
 #define LED_WAITBYTE() while (i < 8)
 #define LED_WAIT() while (!(i & ledbit_threshold_mask))
 
-            volatile uint8_t brightness = 0x00;
+volatile uint8_t brightness = 0x00;
+volatile uint8_t t0_hcount, t0_top;
 volatile uint8_t i = 0;
 
 volatile uint8_t count = 0, limit = 2, window = 2;
@@ -72,17 +61,31 @@ volatile uint8_t ledbit_threshold_mask = 0xF8;
 
 ISR(TIMER0_COMPB_vect, ISR_BLOCK)
 {
+    LED_SETBIT();
+    TIM0_STOP();
+    
+    i++;
+    brightness <<= 1;
+
+    if (brightness & 128)
+    {
+        t0_hcount = LED_1HCOUNT;
+        t0_top = LED_1TOP;
+    }
+    else
+    {
+        t0_hcount = LED_0HCOUNT;
+        t0_top = LED_0TOP;
+    }
+
     if (!(i & ledbit_threshold_mask))
     {
-        LED_SETBIT((brightness << i) & 128);
-    }
-    else {
-        TIM0_STOP();
-        i++;
+        TCNT0 = 0;
+        TIM0_START();
     }
 }
 
-void setup(void)
+void wsProgramming_setup(void)
 {
     // cli()
     // unsigned char sreg;
@@ -119,29 +122,40 @@ void setup(void)
 
 int main()
 {
-    setup();
+    wsProgramming_setup();
 
     uint8_t color = 0x0F;
+    i = 0xFF; // needed by LED_WAIT()
     while (1)
     {
+        // GRB
+        LED_WAIT();
         LED_SENDBYTE(color);
         LED_WAIT();
+        LED_SENDBYTE(0);
+        LED_WAIT();
+        LED_SENDBYTE(0);
+
         count++;
         if (count >= limit)
         {
-            //PORTB |= (1 << PORTB5);
             asm("sbi %0,%1" ::"I"(_SFR_IO_ADDR(PINB)), "I"(DDB5));
 
             TCCR0A &= ~(1 << COM0B1);
+            LED_WAIT();
             i = 0;
             ledbit_threshold_mask = 0xC0;
+            i = 0xFF; // needed by LED_WAIT()
+            TIM0_START();
 
-            // delay
+            // delay for led latch
             for (count = 0; count < 150; count++)
             {
-                LED_SENDBYTE(0);
                 LED_WAIT();
+                TIM0_START();
+                LED_SENDBYTE(0);
             }
+            LED_WAIT();
 
             ledbit_threshold_mask = 0xF8;
             TCCR0A |= (1 << COM0B1);
@@ -153,9 +167,31 @@ int main()
 
             limit++;
         }
-        if (limit >= 60) {
+        if (limit >= 15)
+        {
             limit = 0;
-            color ^= 0x0F;
+
+            // Set color via ADC value
+            ADCSRA |= (1 << ADSC);
+
+            while (ADCSRA & (1 << ADSC))
+                ;
+
+            // dummy read - is this neccessary?
+            color = ADCL;
+
+            color = ADCH;
+
+            if (color)
+            {
+                asm("sbi %0,%1" ::"I"(_SFR_IO_ADDR(PORTB)), "I"(PORTB5));
+            }
+            else
+            {
+                asm("cbi %0,%1" ::"I"(_SFR_IO_ADDR(PORTB)), "I"(PORTB5));
+            }
         }
     }
 }
+
+#endif
