@@ -18,11 +18,11 @@ On Debian (& some derivatives), the AVR toolchain is contained in these packages
 
 ## Physical wiring and flashing
 
-Despite the absense of Arduino software lib usage, the solution used for programming the AVR chip depends on Arduino hardware. The predefined programmer settings makes use of the DIP-slot version of Arduino Uno R3 where you can swap or remove the ATmega328P chip. So instead of using a dedicated Atmel programmer to program the chip (and potentially debug the live program, which is a nice-to-have feature...) I chose to use the method described on the Arduino site:
+Despite not using the Arduino software libs, the AVR chip programming depends on Arduino hardware. The predefined programmer settings makes use of the DIP-slot version of Arduino Uno R3 where you can swap or remove the ATmega328P chip. So instead of using a dedicated Atmel programmer to program the chip (and potentially debug the live program, which is a nice-to-have feature...) I chose to use the method described on the Arduino site:
 
 [From Arduino to a Microcontroller on a Breadboard](https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoToBreadboard/)
 
-The standalone μC is connects to the Arduino board on UART TX,RX and RESET pins just like on the link above, with common ground connected between the microcontroller and Arduino board. The detailed I/O wiring diagram is WIP.
+Note that no μC is fitted to the board DIP slot. The standalone chip is wired to UART TX,RX and RESET pins on the Arduino board with common ground. The detailed I/O wiring diagram (WS281x LED output, TWI/I2C sensor output,..) is WIP.
 
 TODO: Arduino flash method in absense of Arduino IDE works?
 
