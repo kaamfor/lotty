@@ -8,9 +8,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-/*
 #define F_CPU 16000000
+#define __DELAY_BACKWARD_COMPATIBLE__
 #include <util/delay.h>
-*/
 
 #endif
