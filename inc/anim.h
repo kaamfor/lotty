@@ -3,6 +3,10 @@
 
 #include <avr/io.h>
 
+// *****************************
+//  Function prototypes
+// *****************************
+
 /* Compute an almost-continuous, circular color space from one 8-bit numeric input
  * |
  * |1.   2.   3.   1.     <- dominant color byte
